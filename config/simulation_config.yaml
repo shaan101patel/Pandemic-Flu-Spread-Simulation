@@ -1,0 +1,98 @@
+# Pandemic Flu Spread Simulation Configuration
+
+# Spatial Configuration
+spatial:
+  grid_width: 10
+  grid_height: 10
+  location_types:
+    - home
+    - workplace
+    - school
+    - hospital
+    - public_space
+
+# Population Configuration
+population:
+  total_agents: 1000
+  age_distribution:
+    children: 0.20      # 0-17 years
+    adults: 0.60        # 18-64 years
+    elderly: 0.20       # 65+ years
+  health_status:
+    healthy: 0.85
+    immunocompromised: 0.15
+  occupation_distribution:
+    student: 0.20
+    worker: 0.50
+    healthcare_worker: 0.05
+    retired: 0.20
+    unemployed: 0.05
+
+# Disease Model (SEIR) Parameters
+disease:
+  initial_infected: 10
+  incubation_period_days:
+    min: 2
+    max: 4
+  infectious_period_days:
+    min: 5
+    max: 7
+  transmission_probability:
+    base: 0.05
+    home: 0.15
+    workplace: 0.08
+    school: 0.12
+    hospital: 0.10
+    public_space: 0.06
+  mortality_rate_by_age:
+    children: 0.001
+    adults: 0.01
+    elderly: 0.05
+  hospitalization_rate_by_age:
+    children: 0.02
+    adults: 0.05
+    elderly: 0.15
+
+# Simulation Parameters
+simulation:
+  duration_days: 180
+  random_seed: 42
+  monte_carlo_runs: 100
+
+# Hospital Capacity
+hospital:
+  total_beds: 100
+  icu_beds: 20
+  average_stay_days: 10
+
+# Intervention Parameters (default off, can be enabled)
+interventions:
+  social_distancing:
+    enabled: false
+    start_day: 30
+    contact_reduction: 0.50
+  school_closure:
+    enabled: false
+    start_day: 30
+    duration_days: 60
+  workplace_closure:
+    enabled: false
+    start_day: 30
+    closure_percentage: 0.30
+  vaccination:
+    enabled: false
+    start_day: 60
+    daily_capacity: 50
+    effectiveness: 0.70
+    priority_groups:
+      - elderly
+      - healthcare_worker
+      - immunocompromised
+
+# Output Configuration
+output:
+  results_dir: "./results"
+  save_interval: 1  # days
+  generate_plots: true
+  save_agent_data: false
+  verbose: true
