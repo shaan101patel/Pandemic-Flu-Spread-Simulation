@@ -12,22 +12,18 @@ import models.grid as grid
 from simulation.engine import create_hospitals
 from simulation.engine import create_agents
 
+# Optional pygame visualization
+try:
+    from visulation.pygame_visualizer import run as run_visualizer
+    VIS_AVAILABLE = True
+except Exception:
+    VIS_AVAILABLE = False
+
 
 def main():
     """
     Main function to run the pandemic simulation.
-    
-    Advanced Implementation Notes:
-        - Parse command-line arguments
-        - Load configuration
-        - Initialize simulation
-        - Run simulation or Monte Carlo runs
-        - Generate visualizations
-        - Save results
-        - Print summary
-    
-    Command-line interface:
-        python main.py --config config/simulation_config.yaml --runs 100 --output results/
+   
     """
 
     # Init 
@@ -53,6 +49,49 @@ def main():
 
     print("Initial Grid State:")
     print(map)
+
+    # --- Minimal step function for demo/visualization ---
+    # Moves each agent one step to a random neighboring cell (including staying put),
+    # then rebuilds the grid occupancy accordingly.
+    def step_fn():
+        for ag in agents:
+            x, y = ag.location
+            dx = int(np.random.choice([-1, 0, 1]))
+            dy = int(np.random.choice([-1, 0, 1]))
+            nx = max(0, min(StateSpace - 1, x + dx))
+            ny = max(0, min(StateSpace - 1, y + dy))
+            ag.move((nx, ny))
+
+        # Rebuild the grid state each step
+        map.clear()
+        for idx, hosp in enumerate(hospitals):
+            x, y = hosp.location
+            map.addHospital(x, y, idx)
+        for ag in agents:
+            x, y = ag.location
+            map.addAgent(x, y, ag.id)
+
+    # Toggle to enable vis 
+    ENABLE_VISUALIZATION = True
+
+    if ENABLE_VISUALIZATION and VIS_AVAILABLE:
+        # Run a simple visualization loop for a fixed number of steps.
+        # Close the window to stop early.
+        run_visualizer(
+            grid=map,
+            agents=agents,
+            hospitals=hospitals,
+            steps=300,
+            cell_size=20,
+            fps=8,
+            step_fn=step_fn,
+        )
+    else:
+        # Fallback: run a handful of steps headlessly and print the grid
+        for _ in range(10):
+            step_fn()
+        print("Final Grid State (headless run):")
+        print(map)
 
     pass
 
