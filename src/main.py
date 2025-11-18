@@ -3,6 +3,14 @@ Main Entry Point
 
 This script provides the main entry point for running simulations.
 """
+import numpy as np
+
+
+import models.agent as agent
+import models.hospital as hospital
+import models.grid as grid
+from simulation.engine import create_hospitals
+from simulation.engine import create_agents
 
 
 def main():
@@ -21,6 +29,31 @@ def main():
     Command-line interface:
         python main.py --config config/simulation_config.yaml --runs 100 --output results/
     """
+
+    # Init 
+    StateSpace = 30
+    NumOfHospitals = 2
+    NumAgents = 10
+
+    # Create grid and hospitals
+    map = grid.Grid(StateSpace, StateSpace)
+
+    hospitals = create_hospitals(NumOfHospitals, StateSpace)
+    agents = create_agents(NumAgents, StateSpace)
+    
+    # Add hospitals and agents to grid
+    for idx, hosp in enumerate(hospitals):
+        x, y = hosp.location
+        map.addHospital(x, y, idx)
+
+    for ag in agents:
+        x, y = ag.location
+        map.addAgent(x, y, ag.id)
+
+
+    print("Initial Grid State:")
+    print(map)
+
     pass
 
 

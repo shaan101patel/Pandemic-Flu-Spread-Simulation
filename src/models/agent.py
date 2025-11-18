@@ -1,0 +1,31 @@
+
+class Agent:
+
+    def __init__(self, id: int, name: str, age: int, location: tuple, health: str, mask: bool = False):
+
+        # traits
+        self.id = id
+        self.name = name
+        self.age = age
+        self.location = location
+        self.health = health
+        self.mask = mask
+
+
+    def get_info(self) -> str:
+        return f"Agent ID: {self.id}, Name: {self.name}, Age: {self.age}, Location: {self.location}, Health: {self.health}"
+    
+    def move(self, new_location: tuple):
+        self.location = new_location
+
+    def updateHealth(self, new_health: str):
+        self.health = new_health
+
+    def healthStatus(self) -> str:
+        return self.health
+    
+    def putOnMask(self):
+        self.mask = True
+    
+    def maskStatus(self) -> bool:
+        return self.mask
