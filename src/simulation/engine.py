@@ -6,14 +6,12 @@ import models.hospital as hospital
 
 def create_hospitals(NumOfHospitals, StateSpace):
     hospitals = []
-    # spacing ensures hospitals are placed within the StateSpace bounds
-    spacing = max(1, StateSpace // max(1, NumOfHospitals))
     for i in range(NumOfHospitals):
-        for j in range(NumOfHospitals):
-            x = min(i * spacing, StateSpace - 1)
-            y = min(j * spacing, StateSpace - 1)
-            hosp = hospital.Hospital(location=(x, y), vaccine_capacity=1000, vaccine_type="A", admin_speed=10)
-            hospitals.append(hosp)
+        x = np.random.randint(0, StateSpace)
+        y = np.random.randint(0, StateSpace)
+        vaccine_type = "A" if i % 2 == 0 else "B"
+        hosp = hospital.Hospital(location=(x, y), vaccine_capacity=1000, vaccine_type=vaccine_type, admin_speed=10)
+        hospitals.append(hosp)
     return hospitals
 
 

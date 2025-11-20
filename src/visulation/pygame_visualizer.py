@@ -62,7 +62,7 @@ def run(
     grid,
     agents,
     hospitals,
-    steps: int = 300,
+    steps: int = 30000,
     cell_size: int = 20,
     fps: int = 8,
     step_fn: Optional[Callable[[], None]] = None,
