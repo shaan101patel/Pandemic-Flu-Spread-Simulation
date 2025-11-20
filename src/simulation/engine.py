@@ -24,3 +24,24 @@ def create_agents(NumAgents, StateSpace):
         ag = agent.Agent(id=i, name=f"Agent_{i}", age=np.random.randint(1, 100), location=loc, health="healthy")
         agents.append(ag)
     return agents
+
+
+def step(agents, hospitals, grid, StateSpace):
+    # Moves each agent one step to a random neighboring cell (including staying put),
+    # then rebuilds the grid occupancy accordingly.
+    for ag in agents:
+        x, y = ag.location
+        dx = int(np.random.choice([-1, 0, 1]))
+        dy = int(np.random.choice([-1, 0, 1]))
+        nx = max(0, min(StateSpace - 1, x + dx))
+        ny = max(0, min(StateSpace - 1, y + dy))
+        ag.move((nx, ny))
+
+    # Rebuild the grid state each step
+    grid.clear()
+    for idx, hosp in enumerate(hospitals):
+        x, y = hosp.location
+        grid.addHospital(x, y, idx)
+    for ag in agents:
+        x, y = ag.location
+        grid.addAgent(x, y, ag.id)

@@ -11,6 +11,7 @@ import models.hospital as hospital
 import models.grid as grid
 from simulation.engine import create_hospitals
 from simulation.engine import create_agents
+from simulation.engine import step
 
 # Optional pygame visualization
 try:
@@ -51,25 +52,8 @@ def main():
     print(map)
 
     # --- Minimal step function for demo/visualization ---
-    # Moves each agent one step to a random neighboring cell (including staying put),
-    # then rebuilds the grid occupancy accordingly.
     def step_fn():
-        for ag in agents:
-            x, y = ag.location
-            dx = int(np.random.choice([-1, 0, 1]))
-            dy = int(np.random.choice([-1, 0, 1]))
-            nx = max(0, min(StateSpace - 1, x + dx))
-            ny = max(0, min(StateSpace - 1, y + dy))
-            ag.move((nx, ny))
-
-        # Rebuild the grid state each step
-        map.clear()
-        for idx, hosp in enumerate(hospitals):
-            x, y = hosp.location
-            map.addHospital(x, y, idx)
-        for ag in agents:
-            x, y = ag.location
-            map.addAgent(x, y, ag.id)
+        step(agents, hospitals, map, StateSpace)
 
     # Toggle to enable vis 
     ENABLE_VISUALIZATION = True

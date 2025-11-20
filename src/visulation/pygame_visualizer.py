@@ -42,20 +42,33 @@ def _draw_hospitals(surface, hospitals, cell_size: int) -> None:
 
 
 def _draw_agents(surface, agents, cell_size: int) -> None:
-    # Draw agents as circles; if multiple agents share a cell, we'll slightly jitter positions
-    # within the cell for visibility.
-    offsets = [(-0.2, -0.2), (0.2, -0.2), (-0.2, 0.2), (0.2, 0.2), (0.0, 0.0)]
-    per_cell_counts = {}
-    r = max(3, cell_size // 4)
-
+    # Group agents by location
+    location_agents = {}
     for ag in agents:
-        x, y = ag.location
-        count = per_cell_counts.get((x, y), 0)
-        per_cell_counts[(x, y)] = count + 1
-        dx, dy = offsets[count % len(offsets)]
-        cx = int((x + 0.5 + dx) * cell_size)
-        cy = int((y + 0.5 + dy) * cell_size)
-        pygame.draw.circle(surface, RED, (cx, cy), r)
+        loc = ag.location
+        if loc not in location_agents:
+            location_agents[loc] = []
+        location_agents[loc].append(ag)
+    
+    font = pygame.font.SysFont(None, int(cell_size * 0.8))
+
+    for (x, y), ag_list in location_agents.items():
+        count = len(ag_list)
+        center_x = int((x + 0.5) * cell_size)
+        center_y = int((y + 0.5) * cell_size)
+        radius = int(cell_size * 0.4)
+        
+        # Color is GREEN if all agents at this location are healthy, else RED
+        all_healthy = all(ag.health == "healthy" for ag in ag_list)
+        color = GREEN if all_healthy else RED
+        
+        pygame.draw.circle(surface, color, (center_x, center_y), radius)
+        
+        if count > 1:
+            # Draw number
+            text = font.render(str(count), True, WHITE)
+            text_rect = text.get_rect(center=(center_x, center_y))
+            surface.blit(text, text_rect)
 
 
 def run(
