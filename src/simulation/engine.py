@@ -15,8 +15,6 @@ def create_hospitals(NumOfHospitals, StateSpace):
     return hospitals
 
 
-
-
 def create_agents(NumAgents, StateSpace, NumSick=0):
     agents = []
     for i in range(NumAgents):
@@ -33,17 +31,70 @@ def create_agents(NumAgents, StateSpace, NumSick=0):
         agents.append(ag)
     return agents
 
+def randomWalk(agent, StateSpace):
+    x, y = agent.location
+    dx = int(np.random.choice([-1, 0, 1]))
+    dy = int(np.random.choice([-1, 0, 1]))
+    nx = max(0, min(StateSpace - 1, x + dx))
+    ny = max(0, min(StateSpace - 1, y + dy))
+    agent.move((nx, ny))
+
+
+def findHosp(hospitals, agent, StateSpace):
+    
+    closestHosp = (hospitals[0], 999999999999999)
+    x, y = agent.location
+    nx, ny = x, y
+
+    for hosp in hospitals:
+        hx, hy = hosp.location
+        dist = abs(hx - x) + abs(hy - y)
+
+        if dist < closestHosp[1]:
+            closestHosp = (hosp, dist)
+    
+    # Target the closest hospital
+    target_hosp = closestHosp[0]
+    hx, hy = target_hosp.location
+        
+    if x == hx:
+        if hy - y > 0:
+            ny += 1
+        elif hy - y < 0:
+            ny -= 1
+    else: 
+        if hx - x > 0:
+            nx += 1
+        else:
+            nx -= 1
+
+    agent.move((nx, ny))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Main simulation step:
 
 def step(agents, hospitals, grid, StateSpace):
     # Moves each agent one step to a random neighboring cell (including staying put),
     # then rebuilds the grid occupancy accordingly.
+    
     for ag in agents:
-        x, y = ag.location
-        dx = int(np.random.choice([-1, 0, 1]))
-        dy = int(np.random.choice([-1, 0, 1]))
-        nx = max(0, min(StateSpace - 1, x + dx))
-        ny = max(0, min(StateSpace - 1, y + dy))
-        ag.move((nx, ny))
+        if ag.healthStatus() != "healthy" and hospitals:
+            findHosp(hospitals, ag, StateSpace)
+        else:
+            randomWalk(ag, StateSpace)
 
     # --- Disease Transmission Logic ---
     # Group agents by location

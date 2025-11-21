@@ -19,5 +19,8 @@ class Hospital:
     def restock_vaccines(self, additional_doses: int):
         self.vaccine_capacity += additional_doses
 
+    def location(self, location: tuple):
+        return tuple
+
 
 
