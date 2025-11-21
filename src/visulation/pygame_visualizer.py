@@ -80,6 +80,13 @@ def _draw_agents(surface, agents, cell_size: int) -> None:
             surface.blit(text, text_rect)
 
 
+def _draw_step_counter(surface, step: int, width: int, cell_size: int) -> None:
+    font = pygame.font.SysFont(None, 30)
+    text = font.render(f"Step: {step}", True, BLACK)
+    text_rect = text.get_rect(topright=(width * cell_size - 10, 10))
+    surface.blit(text, text_rect)
+
+
 def run(
     grid,
     agents,
@@ -117,6 +124,7 @@ def run(
             _draw_grid(screen, width, height, cell_size)
             _draw_hospitals(screen, hospitals, cell_size)
             _draw_agents(screen, agents, cell_size)
+            _draw_step_counter(screen, frame, width, cell_size)
 
             pygame.display.flip()
             clock.tick(fps)
