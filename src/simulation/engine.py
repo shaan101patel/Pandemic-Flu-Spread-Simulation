@@ -70,9 +70,27 @@ def findHosp(hospitals, agent, StateSpace):
 
     agent.move((nx, ny))
 
-
-
-
+def get_age_based_params(age):
+    if age <= 4:
+        return 0.27111401, 1.5623923
+    elif age <= 9:
+        return 0.27619241, 1.5853057
+    elif age <= 17:
+        return 0.23507195, 1.35129295
+    elif age <= 29:
+        return 0.16806533, 1.11063756
+    elif age <= 39:
+        return 0.17647801, 1.28169089
+    elif age <= 49:
+        return 0.16738755, 1.14906492
+    elif age <= 59:
+        return 0.15507585, 1.22311138
+    elif age <= 69:
+        return 0.16214078, 1.15063113
+    elif age <= 79:
+        return 0.17056577, 1.17523736
+    else:
+        return 0.20907177, 1.35574058
 
 
 
@@ -91,7 +109,8 @@ def step(agents, hospitals, grid, StateSpace):
     # then rebuilds the grid occupancy accordingly.
     
     for ag in agents:
-        if ag.healthStatus() != "healthy" and hospitals:
+        # given that symptoms often appearing around 5-6 days after exposure. and a chance of infected constanlty chaning minds about 50% of the time:
+        if ag.healthStatus() != "healthy" and hospitals and ag.days_infected >= 6 and np.random.rand() < 0.5: 
             findHosp(hospitals, ag, StateSpace)
         else:
             randomWalk(ag, StateSpace)
@@ -111,9 +130,10 @@ def step(agents, hospitals, grid, StateSpace):
         if any(a.health in ["infected", "infectious"] for a in cell_agents):
             for a in cell_agents:
                 if a.health == "healthy":
-                    # Sample from normal distribution
-                    val = np.random.normal(50, 15)
-                    if val > 50:
+                    # Sample from normal distribution based on age
+                    mean, sd = get_age_based_params(a.age)
+                    val = np.random.normal(mean, sd)
+                    if val > 0:
                         a.updateHealth("infected")
                         a.days_infected = 0
 

@@ -27,10 +27,10 @@ def main():
     """
 
     # Init 
-    StateSpace = 30
+    StateSpace = 40
     NumOfHospitals = 4
-    NumAgents = 18
-    SickPeople = 1
+    NumAgents = 300
+    SickPeople = 5
 
     # Create grid and hospitals
     map = grid.Grid(StateSpace, StateSpace)
