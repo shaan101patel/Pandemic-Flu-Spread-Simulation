@@ -35,7 +35,7 @@ def main():
     # Create grid and hospitals
     map = grid.Grid(StateSpace, StateSpace)
 
-    hospitals = create_hospitals(NumOfHospitals, StateSpace)
+    hospitals = create_hospitals(NumOfHospitals, StateSpace, NumAgents)
     agents = create_agents(NumAgents, StateSpace, NumSick=SickPeople)
     
     # Add hospitals and agents to grid

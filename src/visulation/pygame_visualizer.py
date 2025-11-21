@@ -14,6 +14,9 @@ BLUE = (50, 120, 220)
 RED = (220, 60, 60)
 GREEN = (60, 180, 75)
 YELLOW = (255, 255, 0)
+LIGHT_BLUE = (173, 216, 230)
+DARK_BLUE = (0, 0, 139)
+GRAY = (128, 128, 128)
 
 
 def _draw_grid(surface, width: int, height: int, cell_size: int) -> None:
@@ -34,7 +37,15 @@ def _draw_hospitals(surface, hospitals, cell_size: int) -> None:
     for idx, hosp in enumerate(hospitals):
         x, y = hosp.location
         rect = _cell_rect(x, y, cell_size)
-        pygame.draw.rect(surface, BLUE, rect)
+        
+        if not hosp.active:
+            color = GRAY
+        elif hosp.vaccine_type == "Type 1":
+            color = LIGHT_BLUE
+        else:
+            color = DARK_BLUE
+            
+        pygame.draw.rect(surface, color, rect)
         # Small "H" label
         font = pygame.font.SysFont(None, max(12, cell_size // 2))
         text = font.render("H", True, WHITE)

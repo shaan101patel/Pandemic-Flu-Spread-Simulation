@@ -4,13 +4,17 @@ import models.agent as agent
 import models.hospital as hospital
 
 
-def create_hospitals(NumOfHospitals, StateSpace):
+def create_hospitals(NumOfHospitals, StateSpace, CityPopulation):
     hospitals = []
+    # Ensure at least a minimum capacity for small simulations
+    calculated_capacity = (CityPopulation / 1000) * 2.35
+    bed_capacity = max(5, int(calculated_capacity))
+    
     for i in range(NumOfHospitals):
         x = np.random.randint(0, StateSpace)
         y = np.random.randint(0, StateSpace)
-        vaccine_type = "A" if i % 2 == 0 else "B"
-        hosp = hospital.Hospital(location=(x, y), vaccine_capacity=1000, vaccine_type=vaccine_type, admin_speed=10)
+        vaccine_type = "Type 1" if i % 2 == 0 else "Type 2"
+        hosp = hospital.Hospital(location=(x, y), vaccine_capacity=10, vaccine_type=vaccine_type, admin_speed=10, bed_capacity=bed_capacity)
         hospitals.append(hosp)
     return hospitals
 
@@ -108,10 +112,12 @@ def step(agents, hospitals, grid, StateSpace):
     # Moves each agent one step to a random neighboring cell (including staying put),
     # then rebuilds the grid occupancy accordingly.
     
+    active_hospitals = [h for h in hospitals if h.active]
+
     for ag in agents:
         # given that symptoms often appearing around 5-6 days after exposure. and a chance of infected constanlty chaning minds about 50% of the time:
-        if ag.healthStatus() != "healthy" and hospitals and ag.days_infected >= 6 and np.random.rand() < 0.5: 
-            findHosp(hospitals, ag, StateSpace)
+        if ag.healthStatus() != "healthy" and active_hospitals and ag.days_infected >= 6 and np.random.rand() < 0.5: 
+            findHosp(active_hospitals, ag, StateSpace)
         else:
             randomWalk(ag, StateSpace)
 
@@ -143,6 +149,19 @@ def step(agents, hospitals, grid, StateSpace):
             ag.days_infected += 1
             if ag.days_infected > 5:
                 ag.updateHealth("infectious")
+
+    # --- Hospital Interaction Logic ---
+    for hosp in hospitals:
+        # Count agents at this hospital's location
+        patients_here = [ag for ag in agents if ag.location == hosp.location]
+        hosp.update_occupancy(len(patients_here))
+        
+        if hosp.active:
+            for ag in patients_here:
+                if ag.health in ["infected", "infectious"]:
+                    if hosp.administer_vaccine(1):
+                        ag.updateHealth("healthy")
+                        ag.days_infected = 0
 
     # Rebuild the grid state each step
     grid.clear()
