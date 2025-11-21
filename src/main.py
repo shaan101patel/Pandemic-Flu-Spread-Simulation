@@ -24,19 +24,19 @@ except Exception:
 def main():
     """
     Main function to run the pandemic simulation.
-   
     """
 
     # Init 
-    StateSpace = 10
+    StateSpace = 30
     NumOfHospitals = 4
     NumAgents = 18
+    SickPeople = 1
 
     # Create grid and hospitals
     map = grid.Grid(StateSpace, StateSpace)
 
     hospitals = create_hospitals(NumOfHospitals, StateSpace)
-    agents = create_agents(NumAgents, StateSpace)
+    agents = create_agents(NumAgents, StateSpace, NumSick=SickPeople)
     
     # Add hospitals and agents to grid
     for idx, hosp in enumerate(hospitals):
@@ -65,7 +65,7 @@ def main():
             grid=map,
             agents=agents,
             hospitals=hospitals,
-            steps=300,
+            steps=3000,
             cell_size=20,
             fps=8,
             step_fn=step_fn,
@@ -79,7 +79,7 @@ def main():
 
     pass
 
-
+ 
 def parse_arguments():
     """
     Parse command-line arguments.

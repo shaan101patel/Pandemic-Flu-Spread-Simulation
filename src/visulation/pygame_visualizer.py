@@ -13,6 +13,7 @@ DARK_GRAY = (120, 120, 120)
 BLUE = (50, 120, 220)
 RED = (220, 60, 60)
 GREEN = (60, 180, 75)
+YELLOW = (255, 255, 0)
 
 
 def _draw_grid(surface, width: int, height: int, cell_size: int) -> None:
@@ -58,9 +59,17 @@ def _draw_agents(surface, agents, cell_size: int) -> None:
         center_y = int((y + 0.5) * cell_size)
         radius = int(cell_size * 0.4)
         
-        # Color is GREEN if all agents at this location are healthy, else RED
-        all_healthy = all(ag.health == "healthy" for ag in ag_list)
-        color = GREEN if all_healthy else RED
+        # Determine color based on the most severe status in the cell
+        # Priority: Infectious (Red) > Infected (Yellow) > Healthy (Green)
+        has_infectious = any(ag.health == "infectious" for ag in ag_list)
+        has_infected = any(ag.health == "infected" for ag in ag_list)
+        
+        if has_infectious:
+            color = RED
+        elif has_infected:
+            color = YELLOW
+        else:
+            color = GREEN
         
         pygame.draw.circle(surface, color, (center_x, center_y), radius)
         

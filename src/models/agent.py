@@ -10,6 +10,7 @@ class Agent:
         self.location = location
         self.health = health
         self.mask = mask
+        self.days_infected = 0
 
 
     def get_info(self) -> str:
