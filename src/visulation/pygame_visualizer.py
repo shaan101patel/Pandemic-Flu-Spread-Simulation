@@ -102,9 +102,9 @@ def run(
     grid,
     agents,
     hospitals,
-    steps: int = 30000,
+    steps: int = 365,
     cell_size: int = 20,
-    fps: int = 8,
+    fps: int = 60, # default 8
     step_fn: Optional[Callable[[], None]] = None,
 ) -> None:
     """Run a simple visualization loop using pygame.

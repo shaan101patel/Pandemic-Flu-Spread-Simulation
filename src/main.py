@@ -65,7 +65,7 @@ def main():
             grid=map,
             agents=agents,
             hospitals=hospitals,
-            steps=3000,
+            steps=300000,
             cell_size=20,
             fps=8,
             step_fn=step_fn,

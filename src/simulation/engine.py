@@ -14,7 +14,7 @@ def create_hospitals(NumOfHospitals, StateSpace, CityPopulation):
         x = np.random.randint(0, StateSpace)
         y = np.random.randint(0, StateSpace)
         vaccine_type = "Type 1" if i % 2 == 0 else "Type 2"
-        hosp = hospital.Hospital(location=(x, y), vaccine_capacity=10, vaccine_type=vaccine_type, admin_speed=10, bed_capacity=bed_capacity)
+        hosp = hospital.Hospital(location=(x, y), vaccine_capacity=10000, vaccine_type=vaccine_type, admin_speed=10000, bed_capacity=bed_capacity  * 100)
         hospitals.append(hosp)
     return hospitals
 
