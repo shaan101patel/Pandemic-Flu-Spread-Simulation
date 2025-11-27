@@ -129,7 +129,10 @@ def run(
 
             # Advance the simulation one step if provided
             if step_fn is not None:
-                step_fn()
+                should_continue = step_fn()
+                if should_continue is False:
+                    print("Simulation ended early: All agents are either healthy or infected.")
+                    running = False
 
             # Draw
             _draw_grid(screen, width, height, cell_size)

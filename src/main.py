@@ -53,7 +53,7 @@ def main():
 
     # --- Minimal step function for demo/visualization ---
     def step_fn():
-        step(agents, hospitals, map, StateSpace)
+        return step(agents, hospitals, map, StateSpace)
 
     # Toggle to enable vis 
     ENABLE_VISUALIZATION = True
@@ -72,8 +72,11 @@ def main():
         )
     else:
         # Fallback: run a handful of steps headlessly and print the grid
-        for _ in range(10):
-            step_fn()
+        for i in range(10):
+            should_continue = step_fn()
+            if should_continue is False:
+                print(f"Simulation ended early at step {i}: All agents are either healthy or infected.")
+                break
         print("Final Grid State (headless run):")
         print(map)
 
