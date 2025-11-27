@@ -102,9 +102,9 @@ def run(
     grid,
     agents,
     hospitals,
-    steps: int = 30000,
+    steps: int = 365,
     cell_size: int = 20,
-    fps: int = 8,
+    fps: int = 60, # default 8
     step_fn: Optional[Callable[[], None]] = None,
 ) -> None:
     """Run a simple visualization loop using pygame.
@@ -129,7 +129,10 @@ def run(
 
             # Advance the simulation one step if provided
             if step_fn is not None:
-                step_fn()
+                should_continue = step_fn()
+                if should_continue is False:
+                    print("Simulation ended early: All agents are either healthy or infected.")
+                    running = False
 
             # Draw
             _draw_grid(screen, width, height, cell_size)
