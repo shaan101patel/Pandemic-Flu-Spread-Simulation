@@ -14,7 +14,7 @@ def create_hospitals(NumOfHospitals, StateSpace, CityPopulation):
         x = np.random.randint(0, StateSpace)
         y = np.random.randint(0, StateSpace)
         vaccine_type = "Type 1" if i % 2 == 0 else "Type 2"
-        hosp = hospital.Hospital(location=(x, y), vaccine_capacity=10000, vaccine_type=vaccine_type, admin_speed=10000, bed_capacity=bed_capacity  * 100)
+        hosp = hospital.Hospital(location=(x, y), vaccine_capacity=10, vaccine_type=vaccine_type, admin_speed=5, bed_capacity=bed_capacity  * 100)
         hospitals.append(hosp)
     return hospitals
 
@@ -98,8 +98,12 @@ def get_age_based_params(age):
     
 
 def isTerminationConditionMet(agents):
-    all_healthy = all(ag.health == "healthy" for ag in agents)
-    all_infected = all(ag.health in ["infected", "infectious"] for ag in agents)
+    living_agents = [ag for ag in agents if ag.health != "dead"]
+    if not living_agents:
+        return True
+        
+    all_healthy = all(ag.health == "healthy" for ag in living_agents)
+    all_infected = all(ag.health in ["infected", "infectious"] for ag in living_agents)
     return all_healthy or all_infected
 
 
@@ -119,6 +123,9 @@ def step(agents, hospitals, grid, StateSpace):
     active_hospitals = [h for h in hospitals if h.active]
 
     for ag in agents:
+        if ag.health == "dead":
+            continue
+            
         # given that symptoms often appearing around 5-6 days after exposure. and a chance of infected constanlty chaning minds about 50% of the time:
         if ag.healthStatus() != "healthy" and active_hospitals and ag.days_infected >= 6 and np.random.rand() < 0.5: 
             findHosp(active_hospitals, ag, StateSpace)
@@ -129,6 +136,8 @@ def step(agents, hospitals, grid, StateSpace):
     # Group agents by location
     location_agents = {}
     for ag in agents:
+        if ag.health == "dead":
+            continue
         loc = ag.location
         if loc not in location_agents:
             location_agents[loc] = []
@@ -153,11 +162,25 @@ def step(agents, hospitals, grid, StateSpace):
             ag.days_infected += 1
             if ag.days_infected > 5:
                 ag.updateHealth("infectious")
+        elif ag.health == "infectious":
+            ag.days_infected += 1
+            # If a agent has been infectious and is not immune and has not recived a vaccine within 2 day
+            # infectious starts after day 5. So > 7 means they have been infectious for more than 2 days.
+            if ag.days_infected > 15:
+                # Mean: -0.0189952, SD: 100.84830196 (Corrected SD from 0.84... to 100.84...)
+                risk_score = abs(np.random.normal(-0.0189952, 0.084830196))
+                print(f"Agent {ag.id} risk score: {risk_score}")
+
+                # If the risk score is higher than a random number between 0 and 1, the agent dies.
+                # (Negative scores will never kill, scores > 1 will always kill)
+                if risk_score > np.random.rand(): 
+                    ag.updateHealth("dead")
+                    print(f"Agent {ag.id} has died after being infectious for {ag.days_infected} days.")
 
     # --- Hospital Interaction Logic ---
     for hosp in hospitals:
         # Count agents at this hospital's location
-        patients_here = [ag for ag in agents if ag.location == hosp.location]
+        patients_here = [ag for ag in agents if ag.location == hosp.location and ag.health != "dead"]
         hosp.update_occupancy(len(patients_here))
         
         if hosp.active:
@@ -173,6 +196,8 @@ def step(agents, hospitals, grid, StateSpace):
         x, y = hosp.location
         grid.addHospital(x, y, idx)
     for ag in agents:
+        if ag.health == "dead":
+            continue
         x, y = ag.location
         grid.addAgent(x, y, ag.id)
 

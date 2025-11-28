@@ -57,6 +57,8 @@ def _draw_agents(surface, agents, cell_size: int) -> None:
     # Group agents by location
     location_agents = {}
     for ag in agents:
+        if ag.health == "dead":
+            continue
         loc = ag.location
         if loc not in location_agents:
             location_agents[loc] = []
