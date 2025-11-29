@@ -14,10 +14,11 @@ class Agent:
         self.vaccine_doses = 0
         self.received_vaccine_types = set()
         self.immunity_reason = None # "vaccine", "natural", "treatment"
+        self.has_been_infected = health in ["infected", "infectious"]
 
 
     def get_info(self) -> str:
-        return f"Agent ID: {self.id}, Name: {self.name}, Age: {self.age}, Location: {self.location}, Health: {self.health}, Doses: {self.vaccine_doses}, Vaccine Types: {list(self.received_vaccine_types)}, Immunity Reason: {self.immunity_reason}"
+        return f"Agent ID: {self.id}, Name: {self.name}, Age: {self.age}, Location: {self.location}, Health: {self.health}, Doses: {self.vaccine_doses}, Vaccine Types: {list(self.received_vaccine_types)}, Immunity Reason: {self.immunity_reason}, Ever Infected: {self.has_been_infected}"
     
     def move(self, new_location: tuple):
         self.location = new_location

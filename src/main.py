@@ -12,6 +12,7 @@ import models.grid as grid
 from simulation.engine import create_hospitals
 from simulation.engine import create_agents
 from simulation.engine import step
+from simulation.engine import collect_stats
 
 # Optional pygame visualization
 try:
@@ -29,7 +30,7 @@ def main():
     # Init 
     StateSpace = 40
     NumOfHospitals = 4
-    NumAgents = 3000
+    NumAgents = 300
     SickPeople = 5
 
     # Create grid and hospitals
@@ -80,16 +81,51 @@ def main():
         print("Final Grid State (headless run):")
         print(map)
         
-        # Print stats
-        immune_count = sum(1 for a in agents if a.health == "immune")
-        vaccine_immune = sum(1 for a in agents if a.immunity_reason == "vaccine")
-        natural_immune = sum(1 for a in agents if a.immunity_reason == "natural")
-        treatment_immune = sum(1 for a in agents if a.immunity_reason == "treatment")
-        
-        print(f"Total Immune Agents: {immune_count}")
-        print(f"  - Via Vaccine: {vaccine_immune}")
-        print(f"  - Via Natural Recovery: {natural_immune}")
-        print(f"  - Via Hospital Treatment: {treatment_immune}")
+    # Collect and Print Stats
+    stats = collect_stats(agents, hospitals)
+    
+    print("\n" + "="*50)
+    print("SIMULATION REPORT")
+    print("="*50)
+    
+    print("\n1. INFECTION & MORTALITY")
+    print(f"Total Population: {stats['total_population']}")
+    print(f"Total Infected: {stats['total_infected']}")
+    print(f"Total Deaths: {stats['total_deaths']}")
+    
+    inf_rate = (stats['total_infected'] / stats['total_population']) * 100 if stats['total_population'] > 0 else 0
+    mort_rate = (stats['total_deaths'] / stats['total_infected']) * 100 if stats['total_infected'] > 0 else 0
+    print(f"Infection Rate: {inf_rate:.2f}%")
+    print(f"Mortality Rate: {mort_rate:.2f}%")
+    print(f"Transmission Rate: N/A (Requires contact tracing)")
+
+    print("\n2. VACCINATION STATUS")
+    print(f"Fully Vaccinated (2 doses): {stats['vaccination_status'][2]}")
+    print(f"Partially Vaccinated (1 dose): {stats['vaccination_status'][1]}")
+    print(f"Unvaccinated (0 doses): {stats['vaccination_status'][0]}")
+    
+    stockout_pct = (stats['hospital_stats']['stockouts'] / stats['hospital_stats']['requests']) * 100 if stats['hospital_stats']['requests'] > 0 else 0
+    print(f"Vaccine Supply Issues (Stockouts): {stockout_pct:.2f}% ({stats['hospital_stats']['stockouts']}/{stats['hospital_stats']['requests']})")
+
+    print("\n3. IMMUNITY BREAKDOWN")
+    print(f"Total Immune: {stats['immunity_breakdown']['total']}")
+    print(f"  - Vaccine-induced: {stats['immunity_breakdown']['vaccine']}")
+    print(f"  - Natural Recovery: {stats['immunity_breakdown']['natural']}")
+    print(f"  - Hospital Treatment: {stats['immunity_breakdown']['treatment']}")
+
+    print("\n4. DEMOGRAPHICS & RISK ANALYSIS")
+    print("Deaths by Vaccination Status:")
+    print(f"  - Unvaccinated: {stats['deaths_by_vax'][0]}")
+    print(f"  - Partially Vaccinated: {stats['deaths_by_vax'][1]}")
+    print(f"  - Fully Vaccinated (Breakthrough): {stats['deaths_by_vax'][2]}")
+    
+    print("\nAge-Stratified Stats:")
+    print(f"{'Age Group':<10} | {'Infected':<10} | {'Deaths':<10} | {'Mortality %':<12}")
+    print("-" * 50)
+    for bucket, data in stats['age_stats'].items():
+        m_rate = (data['deaths'] / data['infected']) * 100 if data['infected'] > 0 else 0
+        print(f"{bucket:<10} | {data['infected']:<10} | {data['deaths']:<10} | {m_rate:.2f}%")
+    print("="*50 + "\n")
 
     pass
 

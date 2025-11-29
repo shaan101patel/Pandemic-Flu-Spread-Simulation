@@ -140,6 +140,7 @@ def process_disease_transmission(location_agents):
                             if np.random.rand() < infection_risk_multiplier:
                                 a.updateHealth("infected")
                                 a.days_infected = 0
+                                a.has_been_infected = True
 
 def process_disease_progression(agents):
     for ag in agents:
@@ -244,3 +245,57 @@ def step(agents, hospitals, grid, StateSpace):
     if isTerminationConditionMet(agents):
         return False
     return True
+
+def collect_stats(agents, hospitals):
+    stats = {
+        "total_population": len(agents),
+        "total_infected": 0,
+        "total_deaths": 0,
+        "vaccination_status": {0: 0, 1: 0, 2: 0},
+        "immunity_breakdown": {"total": 0, "vaccine": 0, "natural": 0, "treatment": 0},
+        "deaths_by_vax": {0: 0, 1: 0, 2: 0},
+        "age_stats": {}, 
+        "hospital_stats": {"requests": 0, "stockouts": 0}
+    }
+
+    # Initialize age buckets
+    age_buckets = ["0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80+"]
+    for bucket in age_buckets:
+        stats["age_stats"][bucket] = {"infected": 0, "deaths": 0, "total": 0}
+
+    for ag in agents:
+        # Infection & Mortality
+        if ag.has_been_infected:
+            stats["total_infected"] += 1
+        if ag.health == "dead":
+            stats["total_deaths"] += 1
+        
+        # Vaccination Status
+        doses = min(ag.vaccine_doses, 2) # Cap at 2 for indexing
+        stats["vaccination_status"][doses] += 1
+
+        # Immunity Breakdown
+        if ag.health == "immune":
+            stats["immunity_breakdown"]["total"] += 1
+            if ag.immunity_reason in stats["immunity_breakdown"]:
+                stats["immunity_breakdown"][ag.immunity_reason] += 1
+        
+        # Deaths by Vax
+        if ag.health == "dead":
+            stats["deaths_by_vax"][doses] += 1
+
+        # Age Stats
+        bucket_id = min(ag.age // 10, 8)
+        bucket_name = age_buckets[bucket_id]
+        stats["age_stats"][bucket_name]["total"] += 1
+        if ag.has_been_infected:
+            stats["age_stats"][bucket_name]["infected"] += 1
+        if ag.health == "dead":
+            stats["age_stats"][bucket_name]["deaths"] += 1
+
+    # Hospital Stats
+    for hosp in hospitals:
+        stats["hospital_stats"]["requests"] += hosp.vaccine_requests
+        stats["hospital_stats"]["stockouts"] += hosp.vaccine_stockouts
+
+    return stats
