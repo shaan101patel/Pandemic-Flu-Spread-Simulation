@@ -8,17 +8,36 @@ class Hospital:
         self.bed_capacity = bed_capacity
         self.current_patients = 0
         self.active = True
+        self.vaccine_requests = 0
+        self.vaccine_stockouts = 0
 
 
     def get_info(self) -> str:
         return f"Hospital Location: {self.location}, Vaccine Capacity: {self.vaccine_capacity}, Vaccine Type: {self.vaccine_type}, Bed Capacity: {self.bed_capacity}, Active: {self.active}"
     
     def administer_vaccine(self, number_of_doses: int) -> bool:
+        self.vaccine_requests += 1
         if self.active and number_of_doses <= self.vaccine_capacity:
             self.vaccine_capacity -= number_of_doses
             return True
         else:
+            if self.active and self.vaccine_capacity < number_of_doses:
+                self.vaccine_stockouts += 1
             return False
+
+    def treat_patient(self) -> bool:
+        """
+        Attempts to treat a sick patient.
+        Returns True if treatment is successful (50% chance), False otherwise.
+        """
+        if self.active:
+            # 50% chance of success
+            import numpy as np
+            return np.random.rand() < 0.5
+        return False
+            
+    def has_vaccines(self) -> bool:
+        return self.active and self.vaccine_capacity > 0
         
     def update_occupancy(self, count: int):
         self.current_patients = count
