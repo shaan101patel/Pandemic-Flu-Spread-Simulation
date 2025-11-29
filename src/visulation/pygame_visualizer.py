@@ -73,14 +73,17 @@ def _draw_agents(surface, agents, cell_size: int) -> None:
         radius = int(cell_size * 0.4)
         
         # Determine color based on the most severe status in the cell
-        # Priority: Infectious (Red) > Infected (Yellow) > Healthy (Green)
+        # Priority: Infectious (Red) > Infected (Yellow) > Immune (Blue) > Healthy (Green)
         has_infectious = any(ag.health == "infectious" for ag in ag_list)
         has_infected = any(ag.health == "infected" for ag in ag_list)
+        has_immune = any(ag.health == "immune" for ag in ag_list)
         
         if has_infectious:
             color = RED
         elif has_infected:
             color = YELLOW
+        elif has_immune:
+            color = BLUE
         else:
             color = GREEN
         

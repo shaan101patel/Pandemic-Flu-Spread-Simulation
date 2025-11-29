@@ -102,38 +102,11 @@ def isTerminationConditionMet(agents):
     if not living_agents:
         return True
         
-    all_healthy = all(ag.health == "healthy" for ag in living_agents)
+    all_healthy_or_immune = all(ag.health in ["healthy", "immune"] for ag in living_agents)
     all_infected = all(ag.health in ["infected", "infectious"] for ag in living_agents)
-    return all_healthy or all_infected
+    return all_healthy_or_immune or all_infected
 
-
-
-
-
-
-
-
-
-# Main simulation step:
-
-def step(agents, hospitals, grid, StateSpace):
-    # Moves each agent one step to a random neighboring cell (including staying put),
-    # then rebuilds the grid occupancy accordingly.
-    
-    active_hospitals = [h for h in hospitals if h.active]
-
-    for ag in agents:
-        if ag.health == "dead":
-            continue
-            
-        # given that symptoms often appearing around 5-6 days after exposure. and a chance of infected constanlty chaning minds about 50% of the time:
-        if ag.healthStatus() != "healthy" and active_hospitals and ag.days_infected >= 6 and np.random.rand() < 0.5: 
-            findHosp(active_hospitals, ag, StateSpace)
-        else:
-            randomWalk(ag, StateSpace)
-
-    # --- Disease Transmission Logic ---
-    # Group agents by location
+def group_agents_by_location(agents):
     location_agents = {}
     for ag in agents:
         if ag.health == "dead":
@@ -142,21 +115,33 @@ def step(agents, hospitals, grid, StateSpace):
         if loc not in location_agents:
             location_agents[loc] = []
         location_agents[loc].append(ag)
+    return location_agents
 
+def process_disease_transmission(location_agents):
     # Check transmission within each cell
     for loc, cell_agents in location_agents.items():
         # Check if there is at least one sick person (infected or infectious)
         if any(a.health in ["infected", "infectious"] for a in cell_agents):
             for a in cell_agents:
                 if a.health == "healthy":
-                    # Sample from normal distribution based on age
-                    mean, sd = get_age_based_params(a.age)
-                    val = np.random.normal(mean, sd)
-                    if val > 0:
-                        a.updateHealth("infected")
-                        a.days_infected = 0
+                    # Check immunity based on doses
+                    infection_risk_multiplier = 1.0
+                    if a.vaccine_doses == 1:
+                        infection_risk_multiplier = 0.3 # 70% immunity
+                    elif a.vaccine_doses >= 2:
+                        infection_risk_multiplier = 0.0 # 100% immunity
 
-    # --- Disease Progression Logic ---
+                    if infection_risk_multiplier > 0:
+                        # Sample from normal distribution based on age
+                        mean, sd = get_age_based_params(a.age)
+                        val = np.random.normal(mean, sd)
+                        if val > 0:
+                            # Apply immunity reduction
+                            if np.random.rand() < infection_risk_multiplier:
+                                a.updateHealth("infected")
+                                a.days_infected = 0
+
+def process_disease_progression(agents):
     for ag in agents:
         if ag.health == "infected":
             ag.days_infected += 1
@@ -177,6 +162,38 @@ def step(agents, hospitals, grid, StateSpace):
                     ag.updateHealth("dead")
                     print(f"Agent {ag.id} has died after being infectious for {ag.days_infected} days.")
 
+
+
+
+
+
+
+
+# Main simulation step:
+
+def step(agents, hospitals, grid, StateSpace):
+    # Moves each agent one step to a random neighboring cell (including staying put),
+    # then rebuilds the grid occupancy accordingly.
+    
+    active_hospitals = [h for h in hospitals if h.active]
+
+    for ag in agents:
+        if ag.health == "dead":
+            continue
+            
+        # Probabilistic Vaccine Seeking
+        # Every agent (regardless of health) has a small random chance each step to seek vaccine
+        if active_hospitals and np.random.rand() < 0.05: 
+            findHosp(active_hospitals, ag, StateSpace)
+        else:
+            randomWalk(ag, StateSpace)
+
+    location_agents = group_agents_by_location(agents)
+
+    process_disease_transmission(location_agents)
+
+    process_disease_progression(agents)
+
     # --- Hospital Interaction Logic ---
     for hosp in hospitals:
         # Count agents at this hospital's location
@@ -185,10 +202,12 @@ def step(agents, hospitals, grid, StateSpace):
         
         if hosp.active:
             for ag in patients_here:
-                if ag.health in ["infected", "infectious"]:
+                # Any agent at the hospital can try to get vaccinated if they aren't fully immune
+                if ag.vaccine_doses < 2:
                     if hosp.administer_vaccine(1):
-                        ag.updateHealth("healthy")
-                        ag.days_infected = 0
+                        ag.vaccine_doses += 1
+                        if ag.vaccine_doses >= 2:
+                            ag.updateHealth("immune")
 
     # Rebuild the grid state each step
     grid.clear()

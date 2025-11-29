@@ -19,6 +19,9 @@ class Hospital:
             return True
         else:
             return False
+            
+    def has_vaccines(self) -> bool:
+        return self.active and self.vaccine_capacity > 0
         
     def update_occupancy(self, count: int):
         self.current_patients = count

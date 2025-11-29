@@ -75,10 +75,14 @@ def main():
         for i in range(10):
             should_continue = step_fn()
             if should_continue is False:
-                print(f"Simulation ended early at step {i}: All agents are either healthy or infected.")
+                print(f"Simulation ended early at step {i}: All agents are healthy, immune, or infected.")
                 break
         print("Final Grid State (headless run):")
         print(map)
+        
+        # Print stats
+        immune_count = sum(1 for a in agents if a.health == "immune")
+        print(f"Total Immune Agents: {immune_count}")
 
     pass
 

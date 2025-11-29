@@ -11,10 +11,11 @@ class Agent:
         self.health = health
         self.mask = mask
         self.days_infected = 0
+        self.vaccine_doses = 0
 
 
     def get_info(self) -> str:
-        return f"Agent ID: {self.id}, Name: {self.name}, Age: {self.age}, Location: {self.location}, Health: {self.health}"
+        return f"Agent ID: {self.id}, Name: {self.name}, Age: {self.age}, Location: {self.location}, Health: {self.health}, Doses: {self.vaccine_doses}"
     
     def move(self, new_location: tuple):
         self.location = new_location
