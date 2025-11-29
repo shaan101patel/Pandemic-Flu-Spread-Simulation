@@ -202,10 +202,11 @@ def step(agents, hospitals, grid, StateSpace):
         
         if hosp.active:
             for ag in patients_here:
-                # Any agent at the hospital can try to get vaccinated if they aren't fully immune
-                if ag.vaccine_doses < 2:
+                # Agent only takes vaccine if they haven't received this type yet and aren't fully immune
+                if ag.vaccine_doses < 2 and hosp.vaccine_type not in ag.received_vaccine_types:
                     if hosp.administer_vaccine(1):
-                        ag.vaccine_doses += 1
+                        ag.received_vaccine_types.add(hosp.vaccine_type)
+                        ag.vaccine_doses = len(ag.received_vaccine_types)
                         if ag.vaccine_doses >= 2:
                             ag.updateHealth("immune")
 
