@@ -19,6 +19,17 @@ class Hospital:
             return True
         else:
             return False
+
+    def treat_patient(self) -> bool:
+        """
+        Attempts to treat a sick patient.
+        Returns True if treatment is successful (50% chance), False otherwise.
+        """
+        if self.active:
+            # 50% chance of success
+            import numpy as np
+            return np.random.rand() < 0.5
+        return False
             
     def has_vaccines(self) -> bool:
         return self.active and self.vaccine_capacity > 0

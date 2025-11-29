@@ -29,7 +29,7 @@ def main():
     # Init 
     StateSpace = 40
     NumOfHospitals = 4
-    NumAgents = 300
+    NumAgents = 3000
     SickPeople = 5
 
     # Create grid and hospitals
@@ -82,7 +82,14 @@ def main():
         
         # Print stats
         immune_count = sum(1 for a in agents if a.health == "immune")
+        vaccine_immune = sum(1 for a in agents if a.immunity_reason == "vaccine")
+        natural_immune = sum(1 for a in agents if a.immunity_reason == "natural")
+        treatment_immune = sum(1 for a in agents if a.immunity_reason == "treatment")
+        
         print(f"Total Immune Agents: {immune_count}")
+        print(f"  - Via Vaccine: {vaccine_immune}")
+        print(f"  - Via Natural Recovery: {natural_immune}")
+        print(f"  - Via Hospital Treatment: {treatment_immune}")
 
     pass
 

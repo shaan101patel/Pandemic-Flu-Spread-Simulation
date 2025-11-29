@@ -149,25 +149,27 @@ def process_disease_progression(agents):
                 ag.updateHealth("infectious")
         elif ag.health == "infectious":
             ag.days_infected += 1
+            
+            # Natural Recovery (Under 30)
+            if ag.age < 30 and ag.days_infected > 14:
+                if np.random.rand() < 0.5:
+                    ag.updateHealth("immune")
+                    ag.immunity_reason = "natural"
+                    print(f"Agent {ag.id} (Age {ag.age}) naturally recovered.")
+                    continue # Skip death check if recovered
+
             # If a agent has been infectious and is not immune and has not recived a vaccine within 2 day
             # infectious starts after day 5. So > 7 means they have been infectious for more than 2 days.
             if ag.days_infected > 15:
                 # Mean: -0.0189952, SD: 100.84830196 (Corrected SD from 0.84... to 100.84...)
                 risk_score = abs(np.random.normal(-0.0189952, 0.084830196))
-                print(f"Agent {ag.id} risk score: {risk_score}")
+                # print(f"Agent {ag.id} risk score: {risk_score}")
 
                 # If the risk score is higher than a random number between 0 and 1, the agent dies.
                 # (Negative scores will never kill, scores > 1 will always kill)
                 if risk_score > np.random.rand(): 
                     ag.updateHealth("dead")
                     print(f"Agent {ag.id} has died after being infectious for {ag.days_infected} days.")
-
-
-
-
-
-
-
 
 # Main simulation step:
 
@@ -181,9 +183,14 @@ def step(agents, hospitals, grid, StateSpace):
         if ag.health == "dead":
             continue
             
-        # Probabilistic Vaccine Seeking
+        # Movement Logic
+        # 1. Hospital Treatment Seeking (Over 30, Sick, > 14 days)
+        if active_hospitals and ag.age >= 30 and ag.health in ["infected", "infectious"] and ag.days_infected > 14:
+             findHosp(active_hospitals, ag, StateSpace)
+        # 2. Probabilistic Vaccine Seeking (Healthy/Others, small chance)
         # Every agent (regardless of health) has a small random chance each step to seek vaccine
-        if active_hospitals and np.random.rand() < 0.05: 
+        # But we prioritize treatment seeking for those who need it above.
+        elif active_hospitals and np.random.rand() < 0.05: 
             findHosp(active_hospitals, ag, StateSpace)
         else:
             randomWalk(ag, StateSpace)
@@ -202,13 +209,23 @@ def step(agents, hospitals, grid, StateSpace):
         
         if hosp.active:
             for ag in patients_here:
+                # Treatment for Sick Agents (Over 30, > 14 days)
+                if ag.health in ["infected", "infectious"] and ag.age >= 30 and ag.days_infected > 14:
+                    if hosp.treat_patient():
+                        ag.updateHealth("immune")
+                        ag.immunity_reason = "treatment"
+                        print(f"Agent {ag.id} (Age {ag.age}) treated and recovered at hospital.")
+                
+                # Vaccination for Healthy Agents
                 # Agent only takes vaccine if they haven't received this type yet and aren't fully immune
-                if ag.vaccine_doses < 2 and hosp.vaccine_type not in ag.received_vaccine_types:
+                # And they are healthy (Vaccines are for prevention)
+                elif ag.health == "healthy" and ag.vaccine_doses < 2 and hosp.vaccine_type not in ag.received_vaccine_types:
                     if hosp.administer_vaccine(1):
                         ag.received_vaccine_types.add(hosp.vaccine_type)
                         ag.vaccine_doses = len(ag.received_vaccine_types)
                         if ag.vaccine_doses >= 2:
                             ag.updateHealth("immune")
+                            ag.immunity_reason = "vaccine"
 
     # Rebuild the grid state each step
     grid.clear()
