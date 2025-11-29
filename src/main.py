@@ -29,7 +29,7 @@ def main():
     # Init 
     StateSpace = 40
     NumOfHospitals = 4
-    NumAgents = 300
+    NumAgents = 3000
     SickPeople = 5
 
     # Create grid and hospitals
