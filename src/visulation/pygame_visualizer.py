@@ -57,6 +57,8 @@ def _draw_agents(surface, agents, cell_size: int) -> None:
     # Group agents by location
     location_agents = {}
     for ag in agents:
+        if ag.health == "dead":
+            continue
         loc = ag.location
         if loc not in location_agents:
             location_agents[loc] = []
@@ -71,14 +73,17 @@ def _draw_agents(surface, agents, cell_size: int) -> None:
         radius = int(cell_size * 0.4)
         
         # Determine color based on the most severe status in the cell
-        # Priority: Infectious (Red) > Infected (Yellow) > Healthy (Green)
+        # Priority: Infectious (Red) > Infected (Yellow) > Immune (Blue) > Healthy (Green)
         has_infectious = any(ag.health == "infectious" for ag in ag_list)
         has_infected = any(ag.health == "infected" for ag in ag_list)
+        has_immune = any(ag.health == "immune" for ag in ag_list)
         
         if has_infectious:
             color = RED
         elif has_infected:
             color = YELLOW
+        elif has_immune:
+            color = BLUE
         else:
             color = GREEN
         
@@ -102,9 +107,9 @@ def run(
     grid,
     agents,
     hospitals,
-    steps: int = 30000,
+    steps: int = 365,
     cell_size: int = 20,
-    fps: int = 8,
+    fps: int = 60, # default 8
     step_fn: Optional[Callable[[], None]] = None,
 ) -> None:
     """Run a simple visualization loop using pygame.
@@ -129,7 +134,10 @@ def run(
 
             # Advance the simulation one step if provided
             if step_fn is not None:
-                step_fn()
+                should_continue = step_fn()
+                if should_continue is False:
+                    print("Simulation ended early: All agents are either healthy or infected.")
+                    running = False
 
             # Draw
             _draw_grid(screen, width, height, cell_size)

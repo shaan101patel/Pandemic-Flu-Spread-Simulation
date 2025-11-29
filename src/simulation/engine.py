@@ -14,7 +14,7 @@ def create_hospitals(NumOfHospitals, StateSpace, CityPopulation):
         x = np.random.randint(0, StateSpace)
         y = np.random.randint(0, StateSpace)
         vaccine_type = "Type 1" if i % 2 == 0 else "Type 2"
-        hosp = hospital.Hospital(location=(x, y), vaccine_capacity=10, vaccine_type=vaccine_type, admin_speed=10, bed_capacity=bed_capacity)
+        hosp = hospital.Hospital(location=(x, y), vaccine_capacity=10, vaccine_type=vaccine_type, admin_speed=5, bed_capacity=bed_capacity  * 100)
         hospitals.append(hosp)
     return hospitals
 
@@ -95,16 +95,82 @@ def get_age_based_params(age):
         return 0.17056577, 1.17523736
     else:
         return 0.20907177, 1.35574058
+    
 
+def isTerminationConditionMet(agents):
+    living_agents = [ag for ag in agents if ag.health != "dead"]
+    if not living_agents:
+        return True
+        
+    all_healthy_or_immune = all(ag.health in ["healthy", "immune"] for ag in living_agents)
+    all_infected = all(ag.health in ["infected", "infectious"] for ag in living_agents)
+    return all_healthy_or_immune or all_infected
 
+def group_agents_by_location(agents):
+    location_agents = {}
+    for ag in agents:
+        if ag.health == "dead":
+            continue
+        loc = ag.location
+        if loc not in location_agents:
+            location_agents[loc] = []
+        location_agents[loc].append(ag)
+    return location_agents
 
+def process_disease_transmission(location_agents):
+    # Check transmission within each cell
+    for loc, cell_agents in location_agents.items():
+        # Check if there is at least one sick person (infected or infectious)
+        if any(a.health in ["infected", "infectious"] for a in cell_agents):
+            for a in cell_agents:
+                if a.health == "healthy":
+                    # Check immunity based on doses
+                    infection_risk_multiplier = 1.0
+                    if a.vaccine_doses == 1:
+                        infection_risk_multiplier = 0.3 # 70% immunity
+                    elif a.vaccine_doses >= 2:
+                        infection_risk_multiplier = 0.0 # 100% immunity
 
+                    if infection_risk_multiplier > 0:
+                        # Sample from normal distribution based on age
+                        mean, sd = get_age_based_params(a.age)
+                        val = np.random.normal(mean, sd)
+                        if val > 0:
+                            # Apply immunity reduction
+                            if np.random.rand() < infection_risk_multiplier:
+                                a.updateHealth("infected")
+                                a.days_infected = 0
+                                a.has_been_infected = True
 
+def process_disease_progression(agents):
+    for ag in agents:
+        if ag.health == "infected":
+            ag.days_infected += 1
+            if ag.days_infected > 5:
+                ag.updateHealth("infectious")
+        elif ag.health == "infectious":
+            ag.days_infected += 1
+            
+            # Natural Recovery (Under 30)
+            if ag.age < 30 and ag.days_infected > 14:
+                if np.random.rand() < 0.5:
+                    ag.updateHealth("immune")
+                    ag.immunity_reason = "natural"
+                    print(f"Agent {ag.id} (Age {ag.age}) naturally recovered.")
+                    continue # Skip death check if recovered
 
+            # If a agent has been infectious and is not immune and has not recived a vaccine within 2 day
+            # infectious starts after day 5. So > 7 means they have been infectious for more than 2 days.
+            if ag.days_infected > 15:
+                # Mean: -0.0189952, SD: 100.84830196 (Corrected SD from 0.84... to 100.84...)
+                risk_score = abs(np.random.normal(-0.0189952, 0.084830196))
+                # print(f"Agent {ag.id} risk score: {risk_score}")
 
-
-
-
+                # If the risk score is higher than a random number between 0 and 1, the agent dies.
+                # (Negative scores will never kill, scores > 1 will always kill)
+                if risk_score > np.random.rand(): 
+                    ag.updateHealth("dead")
+                    print(f"Agent {ag.id} has died after being infectious for {ag.days_infected} days.")
 
 # Main simulation step:
 
@@ -115,53 +181,52 @@ def step(agents, hospitals, grid, StateSpace):
     active_hospitals = [h for h in hospitals if h.active]
 
     for ag in agents:
-        # given that symptoms often appearing around 5-6 days after exposure. and a chance of infected constanlty chaning minds about 50% of the time:
-        if ag.healthStatus() != "healthy" and active_hospitals and ag.days_infected >= 6 and np.random.rand() < 0.5: 
+        if ag.health == "dead":
+            continue
+            
+        # Movement Logic
+        # 1. Hospital Treatment Seeking (Over 30, Sick, > 14 days)
+        if active_hospitals and ag.age >= 30 and ag.health in ["infected", "infectious"] and ag.days_infected > 14:
+             findHosp(active_hospitals, ag, StateSpace)
+        # 2. Probabilistic Vaccine Seeking (Healthy/Others, small chance)
+        # Every agent (regardless of health) has a small random chance each step to seek vaccine
+        # But we prioritize treatment seeking for those who need it above.
+        elif active_hospitals and np.random.rand() < 0.05: 
             findHosp(active_hospitals, ag, StateSpace)
         else:
             randomWalk(ag, StateSpace)
 
-    # --- Disease Transmission Logic ---
-    # Group agents by location
-    location_agents = {}
-    for ag in agents:
-        loc = ag.location
-        if loc not in location_agents:
-            location_agents[loc] = []
-        location_agents[loc].append(ag)
+    location_agents = group_agents_by_location(agents)
 
-    # Check transmission within each cell
-    for loc, cell_agents in location_agents.items():
-        # Check if there is at least one sick person (infected or infectious)
-        if any(a.health in ["infected", "infectious"] for a in cell_agents):
-            for a in cell_agents:
-                if a.health == "healthy":
-                    # Sample from normal distribution based on age
-                    mean, sd = get_age_based_params(a.age)
-                    val = np.random.normal(mean, sd)
-                    if val > 0:
-                        a.updateHealth("infected")
-                        a.days_infected = 0
+    process_disease_transmission(location_agents)
 
-    # --- Disease Progression Logic ---
-    for ag in agents:
-        if ag.health == "infected":
-            ag.days_infected += 1
-            if ag.days_infected > 5:
-                ag.updateHealth("infectious")
+    process_disease_progression(agents)
 
     # --- Hospital Interaction Logic ---
     for hosp in hospitals:
         # Count agents at this hospital's location
-        patients_here = [ag for ag in agents if ag.location == hosp.location]
+        patients_here = [ag for ag in agents if ag.location == hosp.location and ag.health != "dead"]
         hosp.update_occupancy(len(patients_here))
         
         if hosp.active:
             for ag in patients_here:
-                if ag.health in ["infected", "infectious"]:
+                # Treatment for Sick Agents (Over 30, > 14 days)
+                if ag.health in ["infected", "infectious"] and ag.age >= 30 and ag.days_infected > 14:
+                    if hosp.treat_patient():
+                        ag.updateHealth("immune")
+                        ag.immunity_reason = "treatment"
+                        print(f"Agent {ag.id} (Age {ag.age}) treated and recovered at hospital.")
+                
+                # Vaccination for Healthy Agents
+                # Agent only takes vaccine if they haven't received this type yet and aren't fully immune
+                # And they are healthy (Vaccines are for prevention)
+                elif ag.health == "healthy" and ag.vaccine_doses < 2 and hosp.vaccine_type not in ag.received_vaccine_types:
                     if hosp.administer_vaccine(1):
-                        ag.updateHealth("healthy")
-                        ag.days_infected = 0
+                        ag.received_vaccine_types.add(hosp.vaccine_type)
+                        ag.vaccine_doses = len(ag.received_vaccine_types)
+                        if ag.vaccine_doses >= 2:
+                            ag.updateHealth("immune")
+                            ag.immunity_reason = "vaccine"
 
     # Rebuild the grid state each step
     grid.clear()
@@ -169,5 +234,68 @@ def step(agents, hospitals, grid, StateSpace):
         x, y = hosp.location
         grid.addHospital(x, y, idx)
     for ag in agents:
+        if ag.health == "dead":
+            continue
         x, y = ag.location
         grid.addAgent(x, y, ag.id)
+
+
+
+    # Check for termination condition
+    if isTerminationConditionMet(agents):
+        return False
+    return True
+
+def collect_stats(agents, hospitals):
+    stats = {
+        "total_population": len(agents),
+        "total_infected": 0,
+        "total_deaths": 0,
+        "vaccination_status": {0: 0, 1: 0, 2: 0},
+        "immunity_breakdown": {"total": 0, "vaccine": 0, "natural": 0, "treatment": 0},
+        "deaths_by_vax": {0: 0, 1: 0, 2: 0},
+        "age_stats": {}, 
+        "hospital_stats": {"requests": 0, "stockouts": 0}
+    }
+
+    # Initialize age buckets
+    age_buckets = ["0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80+"]
+    for bucket in age_buckets:
+        stats["age_stats"][bucket] = {"infected": 0, "deaths": 0, "total": 0}
+
+    for ag in agents:
+        # Infection & Mortality
+        if ag.has_been_infected:
+            stats["total_infected"] += 1
+        if ag.health == "dead":
+            stats["total_deaths"] += 1
+        
+        # Vaccination Status
+        doses = min(ag.vaccine_doses, 2) # Cap at 2 for indexing
+        stats["vaccination_status"][doses] += 1
+
+        # Immunity Breakdown
+        if ag.health == "immune":
+            stats["immunity_breakdown"]["total"] += 1
+            if ag.immunity_reason in stats["immunity_breakdown"]:
+                stats["immunity_breakdown"][ag.immunity_reason] += 1
+        
+        # Deaths by Vax
+        if ag.health == "dead":
+            stats["deaths_by_vax"][doses] += 1
+
+        # Age Stats
+        bucket_id = min(ag.age // 10, 8)
+        bucket_name = age_buckets[bucket_id]
+        stats["age_stats"][bucket_name]["total"] += 1
+        if ag.has_been_infected:
+            stats["age_stats"][bucket_name]["infected"] += 1
+        if ag.health == "dead":
+            stats["age_stats"][bucket_name]["deaths"] += 1
+
+    # Hospital Stats
+    for hosp in hospitals:
+        stats["hospital_stats"]["requests"] += hosp.vaccine_requests
+        stats["hospital_stats"]["stockouts"] += hosp.vaccine_stockouts
+
+    return stats
