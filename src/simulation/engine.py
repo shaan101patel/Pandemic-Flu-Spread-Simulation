@@ -14,7 +14,7 @@ def create_hospitals(NumOfHospitals, StateSpace, CityPopulation):
         x = np.random.randint(0, StateSpace)
         y = np.random.randint(0, StateSpace)
         vaccine_type = "Type 1" if i % 2 == 0 else "Type 2"
-        hosp = hospital.Hospital(location=(x, y), vaccine_capacity=10, vaccine_type=vaccine_type, admin_speed=5, bed_capacity=bed_capacity  * 100)
+        hosp = hospital.Hospital(location=(x, y), vaccine_capacity=10, vaccine_type=vaccine_type, admin_speed=5, bed_capacity=bed_capacity)
         hospitals.append(hosp)
     return hospitals
 
@@ -151,9 +151,23 @@ def process_disease_progression(agents):
         elif ag.health == "infectious":
             ag.days_infected += 1
             
-            # Natural Recovery (Under 30)
-            if ag.age < 30 and ag.days_infected > 14:
-                if np.random.rand() < 0.5:
+            # Natural Recovery Logic
+            if ag.days_infected > 14:
+                recovery_prob = 0.0
+                if ag.age <= 5:
+                    recovery_prob = 0.2
+                elif ag.age < 30:
+                    recovery_prob = 0.5
+                elif 30 <= ag.age <= 39:
+                    recovery_prob = 0.3
+                elif 40 <= ag.age <= 49:
+                    recovery_prob = 0.2
+                elif 50 <= ag.age <= 59:
+                    recovery_prob = 0.1
+                elif 60 <= ag.age <= 69:
+                    recovery_prob = 0.05
+                
+                if recovery_prob > 0 and np.random.rand() < recovery_prob:
                     ag.updateHealth("immune")
                     ag.immunity_reason = "natural"
                     print(f"Agent {ag.id} (Age {ag.age}) naturally recovered.")

@@ -4,7 +4,8 @@ Main Entry Point
 This script provides the main entry point for running simulations.
 """
 import numpy as np
-
+import pandas as pd
+import os
 
 import models.agent as agent
 import models.hospital as hospital
@@ -129,135 +130,124 @@ def main():
 
     pass
 
- 
-def parse_arguments():
-    """
-    Parse command-line arguments.
-    
-    Returns:
-        argparse.Namespace: Parsed arguments
-    
-    Advanced Implementation Notes:
-        - Use argparse for clean CLI
-        - Arguments:
-            --config: path to config file
-            --runs: number of Monte Carlo runs
-            --output: output directory
-            --seed: random seed
-            --interventions: which interventions to enable
-            --parallel: number of parallel processes
-        - Provide helpful defaults
-        - Validate arguments
-    """
-    pass
 
 
-def run_single_simulation(config_path, output_dir):
-    """
-    Run a single simulation with given configuration.
-    
-    Args:
-        config_path (str): Path to configuration file
-        output_dir (str): Directory to save results
-    
-    Advanced Implementation Notes:
-        - Load configuration
-        - Create simulation
-        - Run simulation
-        - Collect results
-        - Generate plots
-        - Save everything
-        - Quick way to run one simulation
-    """
-    pass
-
-
-def run_monte_carlo_analysis(config_path, num_runs, output_dir):
+def run_monte_carlo_analysis(num_runs=50, output_dir="results"):
     """
     Run Monte Carlo analysis with multiple replications.
-    
-    Args:
-        config_path (str): Path to configuration file
-        num_runs (int): Number of replications
-        output_dir (str): Directory to save results
-    
-    Advanced Implementation Notes:
-        - Run multiple simulations with different seeds
-        - Aggregate results
-        - Calculate confidence intervals
-        - Generate comparison plots
-        - More robust than single run
-        - Can parallelize across runs
     """
-    pass
+    print(f"Starting Monte Carlo Analysis with {num_runs} runs...")
+    
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
+    # Simulation Parameters
+    StateSpace = 40
+    NumOfHospitals = 4
+    NumAgents = 300
+    SickPeople = 5
+    MaxSteps = 365
+
+    # Storage for all run data
+    all_run_data = []
+
+    for run_id in range(num_runs):
+        # Initialize Simulation
+        map_grid = grid.Grid(StateSpace, StateSpace)
+        hospitals = create_hospitals(NumOfHospitals, StateSpace, NumAgents)
+        agents = create_agents(NumAgents, StateSpace, NumSick=SickPeople)
+        
+        # Initial grid population
+        for idx, hosp in enumerate(hospitals):
+            x, y = hosp.location
+            map_grid.addHospital(x, y, idx)
+        for ag in agents:
+            x, y = ag.location
+            map_grid.addAgent(x, y, ag.id)
+
+        # Run Simulation Loop
+        for _ in range(MaxSteps):
+            should_continue = step(agents, hospitals, map_grid, StateSpace)
+            if not should_continue:
+                break
+        
+        # Collect Stats
+        stats = collect_stats(agents, hospitals)
+        
+        # Flatten stats for DataFrame
+        row = {
+            "Run ID": run_id + 1,
+            "Total Population": stats["total_population"],
+            "Total Infected": stats["total_infected"],
+            "Total Deaths": stats["total_deaths"],
+            "Infection Rate (%)": (stats["total_infected"] / stats["total_population"] * 100) if stats["total_population"] else 0,
+            "Mortality Rate (%)": (stats["total_deaths"] / stats["total_infected"] * 100) if stats["total_infected"] else 0,
+            "Fully Vaccinated": stats["vaccination_status"][2],
+            "Partially Vaccinated": stats["vaccination_status"][1],
+            "Unvaccinated": stats["vaccination_status"][0],
+            "Vaccine Stockout (%)": (stats["hospital_stats"]["stockouts"] / stats["hospital_stats"]["requests"] * 100) if stats["hospital_stats"]["requests"] else 0,
+            "Total Immune": stats["immunity_breakdown"]["total"],
+            "Immune (Vaccine)": stats["immunity_breakdown"]["vaccine"],
+            "Immune (Natural)": stats["immunity_breakdown"]["natural"],
+            "Immune (Treatment)": stats["immunity_breakdown"]["treatment"],
+            "Deaths (Unvaccinated)": stats["deaths_by_vax"][0],
+            "Deaths (Partial)": stats["deaths_by_vax"][1],
+            "Deaths (Full)": stats["deaths_by_vax"][2],
+        }
+
+        # Add Age Stats
+        for bucket, data in stats["age_stats"].items():
+            row[f"Age {bucket} Total"] = data["total"]
+            row[f"Age {bucket} Infected"] = data["infected"]
+            row[f"Age {bucket} Deaths"] = data["deaths"]
+            row[f"Age {bucket} Mortality (%)"] = (data["deaths"] / data["infected"] * 100) if data["infected"] else 0
+            
+        all_run_data.append(row)
+        
+        if (run_id + 1) % 10 == 0:
+            print(f"Run {run_id + 1}/{num_runs} completed.")
+
+    # Create DataFrame
+    df = pd.DataFrame(all_run_data)
+    
+    # Save to Excel/CSV
+    if output_dir:
+        excel_path = os.path.join(output_dir, "monte_carlo_results.xlsx")
+        csv_path = os.path.join(output_dir, "monte_carlo_results.csv")
+    else:
+        excel_path = "monte_carlo_results.xlsx"
+        csv_path = "monte_carlo_results.csv"
+
+    try:
+        df.to_excel(excel_path, index=False)
+        print(f"\nResults saved to {excel_path}")
+    except Exception as e:
+        print(f"\nCould not save to Excel (missing openpyxl?): {e}")
+        df.to_csv(csv_path, index=False)
+        print(f"Results saved to {csv_path} instead.")
+
+    # Report Summary Statistics to Console
+    print("\n" + "="*60)
+    print(f"MONTE CARLO ANALYSIS SUMMARY ({num_runs} Runs)")
+    print("="*60)
+    
+    summary_cols = ["Total Infected", "Total Deaths", "Infection Rate (%)", "Mortality Rate (%)", "Fully Vaccinated", "Vaccine Stockout (%)"]
+    print(f"{'Metric':<25} | {'Mean':<10} | {'Std Dev':<10} | {'Min':<10} | {'Max':<10}")
+    print("-" * 75)
+    
+    for col in summary_cols:
+        if col in df.columns:
+            values = df[col]
+            print(f"{col:<25} | {values.mean():<10.2f} | {values.std():<10.2f} | {values.min():<10.2f} | {values.max():<10.2f}")
+    
+    print("="*60 + "\n")
 
 
-def run_intervention_comparison(config_path, interventions, output_dir):
-    """
-    Compare different intervention strategies.
-    
-    Args:
-        config_path (str): Path to base configuration
-        interventions (list): List of intervention configurations
-        output_dir (str): Directory to save results
-    
-    Advanced Implementation Notes:
-        - Run baseline (no interventions)
-        - Run with each intervention strategy
-        - Compare outcomes
-        - Cost-effectiveness analysis
-        - Generate comparison plots
-        - Policy-relevant analysis
-    """
-    pass
 
 
-def run_parameter_sweep(config_path, parameter_ranges, output_dir):
-    """
-    Run parameter sweep to explore sensitivity.
-    
-    Args:
-        config_path (str): Path to base configuration
-        parameter_ranges (dict): Parameters to vary
-        output_dir (str): Directory to save results
-    
-    Advanced Implementation Notes:
-        - Grid or random search over parameters
-        - Run simulation for each parameter combination
-        - Analyze sensitivity
-        - Find optimal parameters
-        - Generate sensitivity plots
-        - Computationally intensive
-    """
-    pass
-
-
-def run_optimization(config_path, optimization_type, output_dir):
-    """
-    Run optimization to find best intervention strategy.
-    
-    Args:
-        config_path (str): Path to base configuration
-        optimization_type (str): Type of optimization
-        output_dir (str): Directory to save results
-    
-    Advanced Implementation Notes:
-        - Optimize intervention timing, intensity, or portfolio
-        - Use appropriate optimization algorithm
-        - Save optimal parameters
-        - Validate with additional runs
-        - Report findings
-    """
-    pass
 
 
 if __name__ == "__main__":
-    """
-    Script entry point.
-    
-    Advanced Implementation Notes:
-        - Call main() function
-        - Handle exceptions gracefully
-        - Exit with appropriate code
-    """
-    main()
+    # Uncomment to run Monte Carlo Analysis
+    run_monte_carlo_analysis(num_runs=10)
+    # main()
