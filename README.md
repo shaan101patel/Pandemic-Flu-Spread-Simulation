@@ -6,8 +6,8 @@ This project implements an advanced agent-based simulation model to study pandem
 
 The goal is to simulate the spread of pandemic flu within a large, spatially explicit population using an agent-based approach. The model allows for investigation of infection dynamics, intervention strategies, and vaccination logistics, providing a rigorous platform for quantitative analysis and policy exploration.
 
-FULL PAPER FOUND: Project 14 Advanced Pandemnic Flu Spread Final Report (4).pdf
-
+**FULL PAPER FOUND: Project 14 Advanced Pandemnic Flu Spread Final Report (4).pdf
+**
 <img width="909" height="524" alt="image" src="https://github.com/user-attachments/assets/7720179c-40ed-418f-bcd4-6f0f7c4ba944" />
 
 
