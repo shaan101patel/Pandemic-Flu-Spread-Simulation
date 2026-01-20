@@ -6,29 +6,9 @@ This project implements an advanced agent-based simulation model to study pandem
 
 The goal is to simulate the spread of pandemic flu within a large, spatially explicit population using an agent-based approach. The model allows for investigation of infection dynamics, intervention strategies, and vaccination logistics, providing a rigorous platform for quantitative analysis and policy exploration.
 
-## Abstract
-
-Our study presents a discrete-event simulation model of the 2020 SARS-CoV-2
-pandemic flu spread. This approach uses agent-based modeling to analyze the effects of
-population density, healthcare infrastructure, and vaccination logistics on the disease’s outcomes.
-We ran two scenarios of Monte Carlo simulations, one with 300 agents and 4 hospitals (S1) and
-another with 3000 agents and 40 hospitals (S2) holding all other variables the same. Shorthand
-results show that population density is a key driver of infection spread, with S2 exhibiting a
-much higher infection rate (99% vs. 29.7%) from the drastic increase in agent interactions and
-hospital strain. The model additionally incorporates the following to show nuance between runs:
-age stratified infectious rates, vaccination uptake, and hospital capacity. Ultimately, both
-scenarios reveal that immunity and mortality are consistent despite differing infection rates, thus
-vaccine logistics and healthcare capacity in urban areas must have a greater epidemic
-preparedness.
-
-
+FULL PAPER FOUND: Project 14 Advanced Pandemnic Flu Spread Final Report (4).pdf
 
 <img width="909" height="524" alt="image" src="https://github.com/user-attachments/assets/7720179c-40ed-418f-bcd4-6f0f7c4ba944" />
-
-
-<img width="531" height="755" alt="image" src="https://github.com/user-attachments/assets/23923c3c-3d8c-498f-867c-7cba3707477a" />
-
-
 
 
 ## Features
@@ -58,6 +38,7 @@ preparedness.
 
 ```
 Pandemic-Flu-Spread-Simulation/
+└── **Project 14 Advanced Pandemnic Flu Spread Final Report (4).pdf/     # Full Paper + Results**
 ├── src/                    # Source code
 │   ├── models/            # Agent, Location, Grid, Disease models
 │   ├── interventions/     # Intervention strategies
